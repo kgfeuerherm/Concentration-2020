@@ -56,15 +56,23 @@
 		A385D336242E8AED0050ECAD /* Concentration 2020 */ = {
 			isa = PBXGroup;
 			children = (
-				A385D337242E8AED0050ECAD /* AppDelegate.swift */,
-				A385D339242E8AED0050ECAD /* SceneDelegate.swift */,
+				A385D34B242E8CDF0050ECAD /* Supporting Files */,
 				A385D33B242E8AED0050ECAD /* ViewController.swift */,
 				A385D33D242E8AED0050ECAD /* Main.storyboard */,
-				A385D340242E8AEE0050ECAD /* Assets.xcassets */,
-				A385D342242E8AEE0050ECAD /* LaunchScreen.storyboard */,
 				A385D345242E8AEE0050ECAD /* Info.plist */,
 			);
 			path = "Concentration 2020";
+			sourceTree = "<group>";
+		};
+		A385D34B242E8CDF0050ECAD /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				A385D337242E8AED0050ECAD /* AppDelegate.swift */,
+				A385D339242E8AED0050ECAD /* SceneDelegate.swift */,
+				A385D340242E8AEE0050ECAD /* Assets.xcassets */,
+				A385D342242E8AEE0050ECAD /* LaunchScreen.storyboard */,
+			);
+			path = "Supporting Files";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
