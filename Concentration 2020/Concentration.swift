@@ -10,18 +10,28 @@
 
 import Foundation
 
-// The file is generally named after the most important class.
 class Concentration
 {
-    // Instance variables must be initialized. In this instance,
-    // we set it up as an empty array of card(s).
-    var cards = [ Card ]()
+    // Set up an empty array of card(s) and a place to record
+    // whether a given card has been flipped before or not.
+    var cards                                   = [ Card ]()
+    
+    var flipped                                 = [ Bool ]()
     
     // When only one card is face up, keep track of it.
-    var indexOfOneAndOnlyFaceUpCard: Int? = nil
+    var indexOfOneAndOnlyFaceUpCard:    Int?    = nil
     
-    func chooseCard( at index: Int )
+    var flipCount:                      Int
+    
+    // NB: The example of matches and mismatches given in the assignment (item 3) is
+    // not particularly clear, so the calculation given here may or may not reflect
+    // the instructor's original intent. Caveat lector!
+    var score:                          Int
+    
+func chooseCard( at index: Int )
     {
+        // Make sure the chosen card was not already matched
+        // and removed from the game. (If it was, take no action.)
         if !cards[ index ].isMatched
         {
             if let matchIndex = indexOfOneAndOnlyFaceUpCard, matchIndex != index
@@ -30,8 +40,33 @@ class Concentration
                 // has been chosen.
                 if cards[ matchIndex ].identifier == cards[ index ].identifier
                 {
+                    // Match!
                     cards[ matchIndex ].isMatched   = true
                     cards[ index ].isMatched        = true
+                    // Two points for a correct match.
+                    score                           += 2
+                }
+                else
+                {
+                    // Mismatch :(. 1 demerit point for each card which had already
+                    // been previously flipped. Where a card had not been flipped
+                    // previously, record the fact that it has been now.
+                    if flipped[ matchIndex ]
+                    {
+                        score                   -= 1
+                    }
+                    else
+                    {
+                        flipped[ matchIndex ]   = true
+                    }
+                    if flipped[ index ]
+                    {
+                        score                   -= 1
+                    }
+                    else
+                    {
+                        flipped[ index ]        = true
+                    }
                 }
                 cards[ index ].isFaceUp         = true
                 indexOfOneAndOnlyFaceUpCard     = nil
@@ -43,31 +78,31 @@ class Concentration
                 {
                     cards[ flipDownIndex ].isFaceUp = false
                 }
-                cards[ index ].isFaceUp     = true
-                indexOfOneAndOnlyFaceUpCard = index
+                cards[ index ].isFaceUp         = true
+                indexOfOneAndOnlyFaceUpCard     = index
             }
+            // Either way, increase the flip counter.
+            flipCount   += 1
         }
     }
     
     init( numberOfPairsOfCards: Int )
     {
-        // As the loop variable is not needed, simply set it to the placeholder
-        // '_'.
+        // Initialize the properties.
+        score       = 0
+        flipCount   = 0
+
         for _ in 0 ..< numberOfPairsOfCards
         {
-            // The first 'identifier' below represents the parameter
-            // of the Card initializer; the second is the loop variable.
-//          let card = Card( identifier: identifier )
-            // The identifier shouldn't be set outside the struct, so prefer
             let card = Card()
-            // Since Card is a struct, a simple assignment copies all the
-            // properties.
+            // Insert the new card into the deck twice, and set
+            // each one as never flipped.
             cards.append( card )
+            flipped.append( false )
             cards.append( card )
-            // Alternatively:
-            // cards += [ card, card ]
+            flipped.append( false )
         }
         // Randomize the order of the cards.
-        cards = cards.shuffled()
+        cards.shuffle()
     }
 }

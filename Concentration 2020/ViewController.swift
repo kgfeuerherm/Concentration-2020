@@ -8,58 +8,54 @@
 
 // CONTROLLER
 
+// Note: This game was designed to look good in portrait mode
+// on iPhone 11 Pro rather than iPhone X due to current XCode
+// choices at the present time.
+
 import UIKit
 
 class ViewController: UIViewController
 {
-    // Classes get a default initializer so long as all their variables are
-    // initialized, as in this case.
-    //     'lazy' defers the initialization of 'game' until it is actually used. This
-    // is necessary because we cannot otherwise access 'cardButtons', since it only
-    // becomes available once initialization is complete (catch-22).
-    //     NOTE: lazy variables cannot have a 'didSet'!
-    lazy var game        = Concentration( numberOfPairsOfCards: ( cardButtons.count + 1 ) / 2 )
+    // The theme library for the game follows.
+    //     To add a new theme, simply add a new tuple anywhere in the list with the appropriate
+    // elements as specified in the type definition. The game loads with the first theme in the
+    // list as the default.
+    typealias Theme                         =
+    (
+        name                : String,       // not currently needed but could be useful later or in debugging
+        viewBackgroundColour: UIColor,      // colour of main view
+        cardBackgroundColour: UIColor,      // colour of face-down cards
+        emojiSet            : [ String ]    // emojis available to a given theme
+    )
+
+    let themeChoices: [ Theme ]             =
+    [
+        ( "Hallowe'en",    #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1), #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 1), [ "👻", "🎃", "🧹", "😸", "👹", "👺", "👿", "🏴‍☠️", "🎩", "☠️", "💍", "🐍" ] ),
+        ( "Living things", #colorLiteral(red: 0.2745098174, green: 0.4862745106, blue: 0.1411764771, alpha: 1), #colorLiteral(red: 0.721568644, green: 0.8862745166, blue: 0.5921568871, alpha: 1), [ "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🦋", "🐞" ] ),
+        ( "Moon phases",   #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1), #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1), [ "🌔", "🌙", "🌛", "🌜", "🌚", "🌕", "🌖", "🌗", "🌘", "🌑", "🌒", "🌓" ] ),
+        ( "Weather",       #colorLiteral(red: 0.1411764771, green: 0.3960784376, blue: 0.5647059083, alpha: 1), #colorLiteral(red: 0.4745098054, green: 0.8392156959, blue: 0.9764705896, alpha: 1), [ "☀️", "🌤", "⛅️", "🌥", "☁️", "🌦", "🌧", "⛈", "🌩", "🌨", "💧", "💦" ] ),
+        ( "Fruit",         #colorLiteral(red: 0.5058823824, green: 0.3372549117, blue: 0.06666667014, alpha: 1), #colorLiteral(red: 0.7254902124, green: 0.4784313738, blue: 0.09803921729, alpha: 1), [ "🍏", "🍎", "🍐", "🍊", "🥑", "🍌", "🍉", "🍇", "🍓", "🍈", "🍒", "🍑" ] ),
+        ( "Time",          #colorLiteral(red: 0.8039215803, green: 0.8039215803, blue: 0.8039215803, alpha: 1), #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1), [ "🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛" ] ),
+    ]
     
-    var flipCount   = 0 // properties must be initialized; type inferred as Int
-    {
-        // Property observer: whenever flipCount is modified, the following code
-        // is automatically executed.
-        didSet
-        {
-            flipCountLabel.text = "Flips: \(flipCount)"
-        }
-    }
-     
-    // Outlet to reflect current value of flipCount.
-    //     NOTE: this control will typically fail to display in the latest Xcode/Swift
-    // unless constraints have been set manually once its position has been adjusted
-    // following placement on the storyboard.
-    @IBOutlet weak var flipCountLabel: UILabel!
+    // Identity of the currently chosen theme. As noted earlier, the game loads with the first in the library.
+    var currentThemeID                      = 0
     
-    // Choosing 'Outlet Collection' produces an array (rather than a single var)
-    // containing the automatically assigned and unique integer identifiers of the
-    // controls associated with it.
-    //     From the story board, one can also cntl-click the leftmost icon (yellow
-    // circle with white centre) and drag to the controls to establish connections
-    // to the code.
+    // Storage for (mutating) manipulation of current theme.
+    lazy var currentTheme                   = themeChoices[ currentThemeID ]
+    
+    lazy var game                           = Concentration( numberOfPairsOfCards: ( cardButtons.count + 1 ) / 2 )
+    
+    // Label to display the current score.
+    @IBOutlet weak var scoreLabel: UILabel!
+    
     @IBOutlet var cardButtons: [ UIButton ]!
     
-    // Each variable has an external followed by an internal name. In this case, we're
-    // not interested in having an external name, so we set a placeholder '_'.
-    //     Cntl-drag from the control to the code and set the appropriate
-    // choices; mousing over the bullet will show the connection.
     @IBAction func touchCard( _ sender: UIButton )
     {
-        // Use 'let' rather than 'var' for constants. Xcode offers to 'fix' this.
-        //     Note also that the firstIndex method returns an optional Int, since
-        // the lookup may or may not succeed. Thus, the result must be unwrapped
-        // once we are sure that the optional has in fact been set.
-        if let cardNumber = cardButtons.firstIndex( of: sender ) // deprecated: index( of ...)
+        if let cardNumber = cardButtons.firstIndex( of: sender )
         {
             game.chooseCard( at: cardNumber )
-            flipCount += 1
-            // Choosing a card may well alter the state of play, so we need (potentially)
-            // to update the view.
             updateViewFromModel()
         }
         else
@@ -67,9 +63,29 @@ class ViewController: UIViewController
             print( "card not found in cardButtons array" )
         }
     }
+        
+    @IBOutlet weak var flipCountLabel: UILabel!
     
+    @IBAction func resetGame(_ sender: UIButton)
+    {
+        // Set up a new set of cards. (The old set goes into garbage collection by default.)
+        game                        = Concentration( numberOfPairsOfCards: ( cardButtons.count + 1 ) / 2 )
+        
+        // Choose a new theme; it may or may not differ from the current one.
+        currentThemeID              = Int.random( in: 0 ..< themeChoices.count )
+        currentTheme                = themeChoices[ currentThemeID ]
+        flipCountLabel.textColor    = currentTheme.cardBackgroundColour
+        
+        // Finally, synchronize the view in light of the new data.
+        updateViewFromModel()
+    }
+
     func updateViewFromModel()
     {
+        // Show the score.
+        scoreLabel.text     = "Score: \(game.score)"
+        
+        // Update card buttons in accordance with their internal (model) state.
         for index in cardButtons.indices
         {
             let button  = cardButtons[ index ]
@@ -81,40 +97,25 @@ class ViewController: UIViewController
             }
             else
             {
-                // Opt-click on an item pulls up the help information for it.
                 button.setTitle( "", for: UIControl.State.normal )
-                // Typing "color" offers "Color literal" as the first choice;
-                // double-cclicking inserts a colour swatch which can then be double-clicked
-                // to bring up a palette from which other colours can be chosen.
-                button.backgroundColor = card.isMatched ? #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 0) : #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 1)
+                button.backgroundColor = card.isMatched ? #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 0) : themeChoices[ currentThemeID ].cardBackgroundColour
             }
         }
+        
+        // Show the number of flips.
+        flipCountLabel.text = "Flips: \( game.flipCount )"
     }
-    
-    var emojiChoices = [ "👻", "🎃", "😈", "💀", "😺", "👽", "👾", "👺"  ] // inferred to be [ String ]
     
     var emoji = [ Int : String ]()
 
-    // Note repeated identifier 'emoji': Swift allows for identifier overloading. The two
-    // types are easily distinguishable according to usage.
     func emoji( for card: Card ) -> String
     {
-        // Assign an emoji to the card if it doesn't already have one.
-        //     Note the special syntax for back-to-back nested if's using comma.
-        if emoji[ card.identifier ] == nil, emojiChoices.count > 0
+        if emoji[ card.identifier ] == nil, currentTheme.emojiSet.count > 0
         {
-            // The imported C function 'arc4random_uniform' has been superseded.
-            let randomIndex = Int.random( in: 0 ..< emojiChoices.count )
-            emoji[ card.identifier ] = emojiChoices.remove( at: randomIndex )
+            let randomIndex = Int.random( in: 0 ..< currentTheme.emojiSet.count )
+            emoji[ card.identifier ] = currentTheme.emojiSet.remove( at: randomIndex )
         }
-        // Since interrogating optionals is so common, there is a special syntax for
-        // conditional extraction.
         return emoji[ card.identifier ] ?? "?"
     }
-    
-    // When we copy-paste a control and associate it with a new action,
-    // we actually end up associating it with the old action as well!
-    //     The remedy is to right-click on the newly created control and fix
-    // the connections.
 }
 
