@@ -14,22 +14,71 @@ class Concentration
 {
     // Set up an empty array of card(s) and a place to record
     // whether a given card has been flipped before or not.
-    var cards                                   = [ Card ]()
+    //     Can be queried by outsiders, but can only be set here.
+    private( set ) var cards                                   = [ Card ]()
     
-    var flipped                                 = [ Bool ]()
+    // Outsiders may be interested in knowing which cards have been flipped, but do not
+    // allow them to alter the state.
+    private( set ) var flipped                                 = [ Bool ]()
     
     // When only one card is face up, keep track of it.
-    var indexOfOneAndOnlyFaceUpCard:    Int?    = nil
+    // Internal use only.
+    private var indexOfOneAndOnlyFaceUpCard:    Int?
+    {
+        get
+        {
+            // Location of single face-up card.
+            var foundAt: Int?
+            
+            // Search the deck.
+            for index in cards.indices
+            {
+                if cards[ index ].isFaceUp
+                {
+                    // Found a face-up card.
+                    if foundAt == nil
+                    {
+                        // It's the only one so far.
+                        foundAt = index
+                    }
+                    else
+                    {
+                        // It's the second face-up card, so we cannot return the index
+                        // of a single face-up card.
+                        return nil
+                    }
+                }
+            }
+            // Having completed the search, we've either found the index of a single
+            // face-up card or there wasn't one.
+            return foundAt
+        }
+        set
+        {
+            // Run through the deck and turn all cards face down except for the one
+            // indicated by newValue.
+            for index in cards.indices
+            {
+                cards[ index ].isFaceUp = ( index == newValue )
+            }
+        }
+    }
     
-    var flipCount:                      Int
+    // Outsiders may query, but may not set this value.
+    private( set ) var flipCount:               Int
     
     // NB: The example of matches and mismatches given in the assignment (item 3) is
     // not particularly clear, so the calculation given here may or may not reflect
     // the instructor's original intent. Caveat lector!
-    var score:                          Int
+    //     Outsiders may query, but may not set this value.
+    private( set ) var score:                   Int
     
-func chooseCard( at index: Int )
+    // Must fundamentally be available outside as it's the main API.
+    func chooseCard( at index: Int )
     {
+        // Ensure that outside callers do not request something illegal; crash on failure.
+        assert( cards.indices.contains( index ), "Concentration.chooseCard( at: \( index ) ): index out of bounds" )
+        
         // Make sure the chosen card was not already matched
         // and removed from the game. (If it was, take no action.)
         if !cards[ index ].isMatched
@@ -53,32 +102,25 @@ func chooseCard( at index: Int )
                     // previously, record the fact that it has been now.
                     if flipped[ matchIndex ]
                     {
-                        score                   -= 1
+                        score                       -= 1
                     }
                     else
                     {
-                        flipped[ matchIndex ]   = true
+                        flipped[ matchIndex ]       = true
                     }
                     if flipped[ index ]
                     {
-                        score                   -= 1
+                        score                       -= 1
                     }
                     else
                     {
-                        flipped[ index ]        = true
+                        flipped[ index ]            = true
                     }
                 }
-                cards[ index ].isFaceUp         = true
-                indexOfOneAndOnlyFaceUpCard     = nil
+                cards[ index ].isFaceUp             = true
             }
             else
             {
-                // Either 2 cards are face up or none are.
-                for flipDownIndex in cards.indices
-                {
-                    cards[ flipDownIndex ].isFaceUp = false
-                }
-                cards[ index ].isFaceUp         = true
                 indexOfOneAndOnlyFaceUpCard     = index
             }
             // Either way, increase the flip counter.
@@ -88,6 +130,10 @@ func chooseCard( at index: Int )
     
     init( numberOfPairsOfCards: Int )
     {
+        // Ensure that the deck will contain at least one pair of cards.
+        assert( numberOfPairsOfCards > 0,
+                "Concentration.init( \( numberOfPairsOfCards ) ): deck must contain at least one pair of cards" )
+
         // Initialize the properties.
         score       = 0
         flipCount   = 0

@@ -20,7 +20,9 @@ class ViewController: UIViewController
     //     To add a new theme, simply add a new tuple anywhere in the list with the appropriate
     // elements as specified in the type definition. The game loads with the first theme in the
     // list as the default.
-    typealias Theme                         =
+    //     For the time being, there is no reason for Theme to be available outside but that could
+    // potentially change in future.
+    private typealias Theme                 =
     (
         name                : String,       // not currently needed but could be useful later or in debugging
         viewBackgroundColour: UIColor,      // colour of main view
@@ -28,7 +30,9 @@ class ViewController: UIViewController
         emojiSet            : [ String ]    // emojis available to a given theme
     )
 
-    let themeChoices: [ Theme ]             =
+    // Must be private if typealias is made private. But, again, one might wish to make this mutable by
+    // outside users down the road.
+    private let themeChoices: [ Theme ]     =
     [
         ( "Hallowe'en",    #colorLiteral(red: 0, green: 0, blue: 0, alpha: 1), #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 1), [ "👻", "🎃", "🧹", "😸", "👹", "👺", "👿", "🏴‍☠️", "🎩", "☠️", "💍", "🐍" ] ),
         ( "Living things", #colorLiteral(red: 0.2745098174, green: 0.4862745106, blue: 0.1411764771, alpha: 1), #colorLiteral(red: 0.721568644, green: 0.8862745166, blue: 0.5921568871, alpha: 1), [ "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🦋", "🐞" ] ),
@@ -39,19 +43,31 @@ class ViewController: UIViewController
     ]
     
     // Identity of the currently chosen theme. As noted earlier, the game loads with the first in the library.
-    var currentThemeID                      = 0
+    //    For now, let others query the theme ID, but do not let them change it.
+    private( set ) var currentThemeID       = 0
     
     // Storage for (mutating) manipulation of current theme.
-    lazy var currentTheme                   = themeChoices[ currentThemeID ]
+    //     Inherits privacy from privacy of Theme.
+    private lazy var currentTheme           = themeChoices[ currentThemeID ]
     
-    lazy var game                           = Concentration( numberOfPairsOfCards: ( cardButtons.count + 1 ) / 2 )
+    // Must be private because the number of card pairs is tied to the view layout.
+    private lazy var game                   = Concentration( numberOfPairsOfCards: numberOfPairsOfCards )
+    
+    // No reason outsiders shouldn't query this value so long as they don't set it.
+    //     As it is read-only anyway, no need for 'private( set )'.
+    var numberOfPairsOfCards: Int
+    {
+        // Read-only properties do not require 'get {}' around the code.
+        return ( cardButtons.count + 1 ) / 2
+    }
     
     // Label to display the current score.
-    @IBOutlet weak var scoreLabel: UILabel!
+    // Outlets and actions are typically private.
+    @IBOutlet private weak var scoreLabel: UILabel!
     
-    @IBOutlet var cardButtons: [ UIButton ]!
+    @IBOutlet private var cardButtons: [ UIButton ]!
     
-    @IBAction func touchCard( _ sender: UIButton )
+    @IBAction private func touchCard( _ sender: UIButton )
     {
         if let cardNumber = cardButtons.firstIndex( of: sender )
         {
@@ -64,11 +80,11 @@ class ViewController: UIViewController
         }
     }
         
-    @IBOutlet weak var flipCountLabel: UILabel!
+    @IBOutlet private weak var flipCountLabel: UILabel!
     
-    @IBAction func resetGame(_ sender: UIButton)
+    @IBAction private func resetGame(_ sender: UIButton)
     {
-        // Set up a new set of cards. (The old set goes into garbage collection by default.)
+        // Set up a new set of cards. (The old set is disposed of by Swift by default.)
         game                        = Concentration( numberOfPairsOfCards: ( cardButtons.count + 1 ) / 2 )
         
         // Choose a new theme; it may or may not differ from the current one.
@@ -80,7 +96,8 @@ class ViewController: UIViewController
         updateViewFromModel()
     }
 
-    func updateViewFromModel()
+    // No outsiders should be messing with the view.
+    private func updateViewFromModel()
     {
         // Show the score.
         scoreLabel.text     = "Score: \(game.score)"
@@ -106,16 +123,44 @@ class ViewController: UIViewController
         flipCountLabel.text = "Flips: \( game.flipCount )"
     }
     
-    var emoji = [ Int : String ]()
+    // The next two are definitely internal housekeeping items, no one else's business.
+    private var emoji = [ Int : String ]()
 
-    func emoji( for card: Card ) -> String
+    private func emoji( for card: Card ) -> String
     {
         if emoji[ card.identifier ] == nil, currentTheme.emojiSet.count > 0
         {
-            let randomIndex = Int.random( in: 0 ..< currentTheme.emojiSet.count )
-            emoji[ card.identifier ] = currentTheme.emojiSet.remove( at: randomIndex )
+            emoji[ card.identifier ] = currentTheme.emojiSet.remove( at: currentTheme.emojiSet.count.randomChoice )
         }
         return emoji[ card.identifier ] ?? "?"
+    }
+}
+
+// The following has been adapted from the extension example in Lesson 3.
+
+// No reason to block others from using this extension....
+extension Int
+{
+    var randomChoice: Int
+    {
+        if self > 0
+        {
+            // This is the typical case.
+            return Int.random( in: 0 ..< self )
+        }
+        else
+        {
+            if self < 0
+            {
+                // Unusual, but conceivable.
+                return -Int.random( in: 0 ..< -self )
+            }
+            else
+            {
+                // Probably shouldn't happen, but at least this avoids a crash in an unexpected situation.
+                return 0
+            }
+        }
     }
 }
 
