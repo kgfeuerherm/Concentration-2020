@@ -81,6 +81,14 @@ class ViewController: UIViewController
     }
         
     @IBOutlet private weak var flipCountLabel: UILabel!
+    {
+        // When the label gets connected to the UI, make the appropriate
+        // changes to display of flipCount. (Mainly to showcase NSAttributedString.)
+        didSet
+        {
+            updateFlipCountLabel()
+        }
+    }
     
     @IBAction private func resetGame(_ sender: UIButton)
     {
@@ -120,19 +128,32 @@ class ViewController: UIViewController
         }
         
         // Show the number of flips.
-        flipCountLabel.text = "Flips: \( game.flipCount )"
+        updateFlipCountLabel()
+    }
+    
+    func updateFlipCountLabel()
+    {
+        // Showcase NSAttributedString. NB: 'NSAttrinutedStringKey' (used in the lecture)
+        // has been renamed 'NSAttributedString.Key'.
+        let attributes: [ NSAttributedString.Key : Any ] =
+        [
+            .strokeColor:   currentTheme.cardBackgroundColour,
+            .strokeWidth:   5.0
+        ]
+        let attributedString = NSAttributedString( string: "Flips: \( game.flipCount )", attributes: attributes )
+        flipCountLabel.attributedText = attributedString
     }
     
     // The next two are definitely internal housekeeping items, no one else's business.
-    private var emoji = [ Int : String ]()
+    private var emoji = [ Card : String ]()
 
     private func emoji( for card: Card ) -> String
     {
-        if emoji[ card.identifier ] == nil, currentTheme.emojiSet.count > 0
+        if emoji[ card ] == nil, currentTheme.emojiSet.count > 0
         {
-            emoji[ card.identifier ] = currentTheme.emojiSet.remove( at: currentTheme.emojiSet.count.randomChoice )
+            emoji[ card ] = currentTheme.emojiSet.remove( at: currentTheme.emojiSet.count.randomChoice )
         }
-        return emoji[ card.identifier ] ?? "?"
+        return emoji[ card ] ?? "?"
     }
 }
 
